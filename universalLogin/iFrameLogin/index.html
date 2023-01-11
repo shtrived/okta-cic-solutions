@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!--
+      This is the page head - it contains info the browser uses to display the page
+      You won't see what's in the head in the page
+      Scroll down to the body element for the page content
+    -->
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="https://glitch.com/favicon.ico" />
+
+    <!-- 
+      This is an HTML comment
+      You can write text in a comment and the content won't be visible in the page
+    -->
+
+    <title>iFrame Content</title>
+
+    <!-- Meta tags for SEO and social sharing -->
+    <link rel="canonical" href="https://glitch-hello-website.glitch.me/" />
+    <meta
+      name="description"
+      content="A simple website, built with Glitch. Remix it to get your own."
+    />
+    <meta name="robots" content="index,follow" />
+    <meta property="og:title" content="Hello World!" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://glitch-hello-website.glitch.me/" />
+    <meta
+      property="og:description"
+      content="A simple website, built with Glitch. Remix it to get your own."
+    />
+    <meta
+      property="og:image"
+      content="https://cdn.glitch.com/605e2a51-d45f-4d87-a285-9410ad350515%2Fhello-website-social.png?v=1616712748147"
+    />
+    <meta name="twitter:card" content="summary" />
+
+    <!-- Import the webpage's stylesheet -->
+    <link rel="stylesheet" href="/style.css" />
+    
+    <!-- Import the webpage's javascript file -->
+    <script src="/script.js" defer></script>
+  </head>
+  <body>
+  
+  <img src= "https://www.uplift.com/wp-content/uploads/2021/04/Uplift-Logo-Black-01.png.webp" alt="Uplift">
+    <p></p>
+    <label id="login-text">Enter your phone number to continue</label><br>
+    <p></p>
+  <input type="text" id="phone-number" name="phone-number"><br>
+    <p></p>
+  <button id="pwd-start">Continue</button><br>
+    <p></p>
+  <button id="pwd-verify" visibi>Passwordless Verify</button><br>
+    <p></p>
+  <button id="logout">Log out</button>
+    <p></p>
+  
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/latest/js.cookie.min.js"></script>
+  <script src="https://cdn.auth0.com/js/auth0/9.18/auth0.min.js"></script>
+
+  <script type="application/javascript">
+    const pwdStartButton = document.getElementById('pwd-start');
+    const pwdVerifyButton = document.getElementById('pwd-verify');
+    const logoutButton = document.getElementById('logout');
+    const loginText = document.getElementById('login-text');
+    const phoneNumber = document.getElementById('phone-number');
+    
+    pwdVerifyButton.style.visibility = "hidden";
+    logoutButton.style.display = 'none';
+    
+    const options = {
+      domain: 'uplift-pwdless-demo.us.auth0.com',
+      clientID: '5LL5fpLMWdoyKjTP0tw2HyeOmOZUzrU9',
+      redirectUri: 'https://hollow-probable-droplet.glitch.me',
+      responseType: 'token id_token'
+    };
+
+    var passwordlessPhone;
+
+    pwdStartButton.addEventListener('click', () => {
+      console.log('pwdless start func');
+      const webAuth = new auth0.WebAuth({
+        ...options,
+        responseType: 'id_token token'
+      });
+
+      // const phone = prompt('Enter your phone number');
+      const phone = phoneNumber.value;
+
+      if (phone) {
+        webAuth.passwordlessStart(
+          {
+            connection: 'sms',
+            send: 'code',
+            phoneNumber: phone
+          },
+          (err, result) => {
+            if (err) return console.error(err);
+            console.log(result);
+            passwordlessPhone = phone;
+            phoneNumber.value = '';
+            loginText.innerHTML = 'Enter OTP Code sent to your phone';
+            pwdVerifyButton.style.visibility = "visible";
+            pwdStartButton.style.visibility = "hidden";
+            // alert('Done! Check your phone');
+          }
+        );
+      }
+    });
+
+    pwdVerifyButton.addEventListener('click', () => {
+      const webAuth = new auth0.WebAuth({
+        ...options,
+        responseType: 'id_token token'
+      });
+
+      // const verificationCode = prompt('Enter the code');
+      const verificationCode = phoneNumber.value;
+
+      if (!passwordlessPhone) {
+        passwordlessPhone = prompt(
+          'Enter the phone number to which the code was sent'
+        );
+      }
+
+      if (verificationCode) {
+        webAuth.passwordlessLogin(
+          {
+            connection: 'sms',
+            verificationCode: verificationCode,
+            email: passwordlessPhone
+          },
+          (err, res) => {
+            if (err) console.error(err);
+            phoneNumber.style.visibility = "hidden";
+            //console.log(res);
+            
+          }
+        );
+      }
+    });
+
+    logoutButton.addEventListener('click', () => {
+      const webAuth = new auth0.WebAuth(options);
+      webAuth.logout({ returnTo: 'https://hollow-probable-droplet.glitch.me' });
+      pwdVerifyButton.style.display = 'block';
+      pwdStartButton.style.display = 'block';
+      phoneNumber.style.visibility = "block";
+      loginText.innerHTML = 'Enter your phone number to continue';
+    });
+
+    window.onload = function () {
+      const webAuth = new auth0.WebAuth(options);
+
+      webAuth.parseHash({ hash: window.location.hash }, function(err, authResult) {
+        if (err) {
+          return console.log(err);
+        }
+        
+        if (authResult) {
+          console.log(authResult);
+          webAuth.client.userInfo(authResult.accessToken, function(err, user) {
+            // Now you have the user's information
+            console.log(user);
+            pwdVerifyButton.style.display = 'none';
+            pwdStartButton.style.display = 'none';
+            loginText.innerHTML = 'Welcome back ' + user.name + '!';
+            phoneNumber.style.visibility = "hidden";
+            logoutButton.style.display = 'block';
+          });
+        }
+      });
+    };
+  </script>
+</body>
+</html>
